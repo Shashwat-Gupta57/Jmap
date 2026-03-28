@@ -1,22 +1,24 @@
-# Jmap — Java Project Context Mapper
+# Jctx — Java Context Extractor
 
-> Generate a clean, structured snapshot of any Java project — classes, fields, methods, and Javadoc — in one `context.txt` file ready to drop straight into an AI chat.
+> Scan any Java project and produce a single `context.txt` — classes, fields, methods, and Javadoc — ready to paste into an AI chat for planning and architecture help.
 
 ---
 
-## What it does
+## The problem it solves
 
-When you're building something in Java and need planning help from an AI (ChatGPT, Claude, Gemini, etc.), you first need to give the AI context about your codebase. Doing that by hand — copying files, explaining structure — wastes time and eats your token budget.
+When you need planning help from an AI (Claude, ChatGPT, Gemini, etc.) on a Java project, you first have to explain your codebase. Copying files one by one, describing structure manually — it's slow and wastes your token budget before you even ask your real question.
 
-**Jmap** solves that. Point it at your project folder and it produces a single `context.txt` containing:
+**Jctx** fixes that. Point it at your project folder and it generates a single `context.txt` with everything structured and labelled, ready to paste.
 
-- A visual **file tree** of your entire project
-- Every **class / interface / enum** found
-- All **data members** (fields) with their access modifiers and inline comments
-- All **methods**, numbered, with their full signature and attached **Javadoc**
-- Your **pom.xml** content (if present)
+---
 
-Paste `context.txt` into your AI chat and start asking questions — the AI will have everything it needs.
+## What gets extracted
+
+- A visual **file tree** of your project
+- Every **class**, **interface**, and **enum**
+- All **data members** (fields) with access modifiers and inline comments
+- All **methods**, numbered, with full signatures and attached **Javadoc**
+- Your **pom.xml** content if present
 
 ---
 
@@ -24,7 +26,7 @@ Paste `context.txt` into your AI chat and start asking questions — the AI will
 
 ```
 ================================================================
- JMAP - Java Project Context Mapper
+ JCTX - Java Context Extractor
  Project : C:\projects\MyApp
  Date    : 2026-03-28 14:22:01
  Java    : 12 file(s)   |   POM: 1 file(s)
@@ -62,7 +64,7 @@ Paste `context.txt` into your AI chat and start asking questions — the AI will
 
   METHODS:
     [1] User findById(int id)
-         DOC: Returns a user by their unique database ID @param id the user ID @return the User object or null
+         DOC: Returns a user by their unique database ID @param id the user ID
 
     [2] void save(User user)
          DOC: (no documentation)
@@ -75,88 +77,86 @@ Paste `context.txt` into your AI chat and start asking questions — the AI will
 
 ## Requirements
 
-- **Windows** (the `.bat` launcher is Windows-only; `Jmap.py` runs anywhere Python does)
 - **Python 3.8+** — [download here](https://python.org)
+- **Windows** for the `.bat` launcher and installer (`Jctx.py` runs on any OS with Python)
 
 ---
 
 ## Installation (Windows)
 
 1. Download or clone this repo
-2. Right-click `Setup.bat` → **Run as administrator**
-3. Follow the prompts — Jmap is copied to `%ProgramFiles%\Jmap` and added to your system PATH
-4. Open a **new** terminal and you're ready:
+2. Right-click `setup.bat` → **Run as administrator**
+3. Follow the on-screen prompts
+4. Open a **new** terminal — done:
 
 ```
-Jmap "C:\path\to\your\project"
+Jctx "C:\path\to\your\project"
 ```
 
-### Manual installation (no admin rights)
+### No admin rights?
 
-Copy `Jmap.py` and `Jmap.bat` to any folder, then either:
-- Add that folder to your PATH manually, or
-- Run directly: `Jmap.bat "My Project"`
+Copy `Jctx.py` and `Jctx.bat` to any folder and run directly:
+
+```
+Jctx.bat "My Project"
+```
+
+Or with Python directly (any OS):
+
+```
+python Jctx.py "My Project"
+```
 
 ---
 
 ## Usage
 
 ```
-Jmap <project_folder> [flags]
+Jctx <project_folder> [flags]
 ```
 
-| Flag | Description |
+| Flag | What it does |
 |---|---|
 | *(none)* | Full report saved to `context.txt` inside the project folder |
-| `--no-tree` | Omit the file-tree section |
-| `--print` | Also print the full report to the console |
+| `--no-tree` | Omit the file tree (useful for very large projects) |
+| `--print` | Also print the report to the console |
 | `--help` | Show help and exit |
 
 ### Examples
 
 ```bat
-:: Basic usage — produces context.txt inside the project folder
-Jmap "C:\projects\MyApp"
-
-:: Skip the file tree (shorter output for large projects)
-Jmap "C:\projects\MyApp" --no-tree
-
-:: Print to console AND save to file
-Jmap "C:\projects\MyApp" --print
-
-:: Combine flags
-Jmap "C:\projects\MyApp" --no-tree --print
+Jctx "C:\projects\MyApp"
+Jctx "C:\projects\MyApp" --no-tree
+Jctx "C:\projects\MyApp" --print
+Jctx "C:\projects\MyApp" --no-tree --print
 ```
 
 ---
 
-## What gets skipped
+## Using the output with AI
 
-Jmap automatically ignores build artifacts, IDE folders, and dependency caches so you only see your source code:
+1. Run Jctx on your project
+2. Open `context.txt` from your project folder
+3. Copy and paste into your AI chat before your question
 
-**Directories:** `build`, `target`, `out`, `bin`, `.gradle`, `.idea`, `.git`, `node_modules`, `lib`, `libs`, `generated`, `classes`, and more.
-
-**File types:** `.class`, `.jar`, `.war`, `.ear`, `.zip`, `.iml`, and other binary/compiled formats.
+**Suggested opener:**
+> *"Here is the structure of my Java project: [paste context.txt]. I need help with..."*
 
 ---
 
-## How to use the output with AI
+## What gets skipped automatically
 
-1. Run Jmap on your project
-2. Open `context.txt` from your project folder
-3. Copy its contents
-4. Paste into your AI chat before asking your question
+**Directories:** `build`, `target`, `out`, `bin`, `.gradle`, `.idea`, `.git`, `node_modules`, `lib`, `libs`, `generated`, `classes`, and more.
 
-**Suggested prompt:**
-> *"Here is the structure of my Java project. [paste context.txt]. I need help with [your question]."*
+**File types:** `.class`, `.jar`, `.war`, `.ear`, `.zip`, `.iml`, and other compiled/binary formats.
 
 ---
 
 ## Limitations
 
-- **Java only** (more languages planned)
-- Method detection works on standard single-line signatures. Multi-line signatures (parameter list split across lines) are not yet captured
-- Anonymous inner classes and lambda bodies are intentionally excluded — only top-level class members are listed
+- **Java only** — more languages may be added in future
+- Multi-line method signatures (parameters split across lines) are not yet captured
+- Anonymous inner classes and lambda bodies are intentionally excluded — only direct class members are listed
 
 ---
 
@@ -164,9 +164,9 @@ Jmap automatically ignores build artifacts, IDE folders, and dependency caches s
 
 | File | Purpose |
 |---|---|
-| `Jmap.py` | The extractor — run directly with Python on any OS |
-| `Jmap.bat` | Windows launcher — calls `Jmap.py` with the same arguments |
-| `Setup.bat` | Windows installer — copies to Program Files and adds to PATH |
+| `Jctx.py` | The extractor — works on any OS with Python 3.8+ |
+| `Jctx.bat` | Windows launcher — wraps `Jctx.py` for command-line use |
+| `setup.bat` | Windows installer — copies to `%ProgramFiles%\Jctx` and adds to PATH |
 
 ---
 

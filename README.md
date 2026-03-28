@@ -1,4 +1,4 @@
-# jmap — Java Project Context Mapper
+# Jmap — Java Project Context Mapper
 
 > Generate a clean, structured snapshot of any Java project — classes, fields, methods, and Javadoc — in one `context.txt` file ready to drop straight into an AI chat.
 
@@ -8,7 +8,7 @@
 
 When you're building something in Java and need planning help from an AI (ChatGPT, Claude, Gemini, etc.), you first need to give the AI context about your codebase. Doing that by hand — copying files, explaining structure — wastes time and eats your token budget.
 
-**jmap** solves that. Point it at your project folder and it produces a single `context.txt` containing:
+**Jmap** solves that. Point it at your project folder and it produces a single `context.txt` containing:
 
 - A visual **file tree** of your entire project
 - Every **class / interface / enum** found
@@ -75,7 +75,7 @@ Paste `context.txt` into your AI chat and start asking questions — the AI will
 
 ## Requirements
 
-- **Windows** (the `.bat` launcher is Windows-only; `jmap.py` runs anywhere Python does)
+- **Windows** (the `.bat` launcher is Windows-only; `Jmap.py` runs anywhere Python does)
 - **Python 3.8+** — [download here](https://python.org)
 
 ---
@@ -83,26 +83,26 @@ Paste `context.txt` into your AI chat and start asking questions — the AI will
 ## Installation (Windows)
 
 1. Download or clone this repo
-2. Right-click `setup.bat` → **Run as administrator**
-3. Follow the prompts — jmap is copied to `%ProgramFiles%\jmap` and added to your system PATH
+2. Right-click `Setup.bat` → **Run as administrator**
+3. Follow the prompts — Jmap is copied to `%ProgramFiles%\Jmap` and added to your system PATH
 4. Open a **new** terminal and you're ready:
 
 ```
-jmap "C:\path\to\your\project"
+Jmap "C:\path\to\your\project"
 ```
 
 ### Manual installation (no admin rights)
 
-Copy `jmap.py` and `jmap.bat` to any folder, then either:
+Copy `Jmap.py` and `Jmap.bat` to any folder, then either:
 - Add that folder to your PATH manually, or
-- Run directly: `jmap.bat "My Project"`
+- Run directly: `Jmap.bat "My Project"`
 
 ---
 
 ## Usage
 
 ```
-jmap <project_folder> [flags]
+Jmap <project_folder> [flags]
 ```
 
 | Flag | Description |
@@ -116,23 +116,23 @@ jmap <project_folder> [flags]
 
 ```bat
 :: Basic usage — produces context.txt inside the project folder
-jmap "C:\projects\MyApp"
+Jmap "C:\projects\MyApp"
 
 :: Skip the file tree (shorter output for large projects)
-jmap "C:\projects\MyApp" --no-tree
+Jmap "C:\projects\MyApp" --no-tree
 
 :: Print to console AND save to file
-jmap "C:\projects\MyApp" --print
+Jmap "C:\projects\MyApp" --print
 
 :: Combine flags
-jmap "C:\projects\MyApp" --no-tree --print
+Jmap "C:\projects\MyApp" --no-tree --print
 ```
 
 ---
 
 ## What gets skipped
 
-jmap automatically ignores build artifacts, IDE folders, and dependency caches so you only see your source code:
+Jmap automatically ignores build artifacts, IDE folders, and dependency caches so you only see your source code:
 
 **Directories:** `build`, `target`, `out`, `bin`, `.gradle`, `.idea`, `.git`, `node_modules`, `lib`, `libs`, `generated`, `classes`, and more.
 
@@ -142,7 +142,7 @@ jmap automatically ignores build artifacts, IDE folders, and dependency caches s
 
 ## How to use the output with AI
 
-1. Run jmap on your project
+1. Run Jmap on your project
 2. Open `context.txt` from your project folder
 3. Copy its contents
 4. Paste into your AI chat before asking your question
@@ -164,9 +164,9 @@ jmap automatically ignores build artifacts, IDE folders, and dependency caches s
 
 | File | Purpose |
 |---|---|
-| `jmap.py` | The extractor — run directly with Python on any OS |
-| `jmap.bat` | Windows launcher — calls `jmap.py` with the same arguments |
-| `setup.bat` | Windows installer — copies to Program Files and adds to PATH |
+| `Jmap.py` | The extractor — run directly with Python on any OS |
+| `Jmap.bat` | Windows launcher — calls `Jmap.py` with the same arguments |
+| `Setup.bat` | Windows installer — copies to Program Files and adds to PATH |
 
 ---
 

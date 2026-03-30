@@ -28,7 +28,9 @@ ChatGPT tells exactly which class to modify and why
 
 **Jctx does all of that in one command.**
 
-It scans your project and writes a clean, structured `context.txt` (or `context.md`) — every class, every field, every method signature, every Javadoc/KDoc comment, and your build files — formatted so an AI can immediately understand your entire codebase.
+It scans your project and writes a clean, structured `context.txt` (or `context.md`) — every class, every field, every method signature, every Javadoc/KDoc comment, and your build files — formatted so an AI can immediately understand your entire codebase. 
+
+It also provides **Token Count Estimation** and **Language Percentages** to help you stay within your AI's context limits.
 
 Paste it. Ask your question. Get useful answers.
 
@@ -40,7 +42,7 @@ Paste it. Ask your question. Get useful answers.
 <summary>Click to expand sample context.md (Markdown Mode)</summary>
 
 ````markdown
-# JCTX v1.1.0 — Context Report
+# JCTX v1.6.1 — Context Report
 
 - **Project:** `C:\projects\Talken`
 - **Date:** 2026-03-30 14:22:01
@@ -108,7 +110,7 @@ Talken\
 
 ## Install (Windows)
 
-**Option : Manual Download**
+**Manual Download**
 1. Download The Latest **Release** Zip.
 2. Unzip it
 3. Right-click `Setup.bat` → **Run as administrator**
@@ -129,14 +131,16 @@ That's it. `context.txt` appears inside your project folder.
 ## Usage
 
 ```
-Jctx <project_folder> [--md] [--no-tree] [--print] [--version] [--help]
+Jctx <project_folder> [--md] [--slim] [--no-tree] [--clipboard] [--print] [--version] [--help]
 ```
 
 | Flag | Effect |
 |---|---|
-| *(none)* | Saves `context.txt` into your project folder |
+| *(none)* | Saves `context.txt` into your project folder and prints token estimates |
 | `--md` | Outputs a cleanly formatted Markdown file (`context.md`) instead of plain text |
+| `--slim` | Slim mode: output only class names and method signatures (omits fields and docs) to save tokens |
 | `--no-tree` | Skips the file tree section (shorter output) |
+| `--clipboard` | Copies the generated report directly to your clipboard |
 | `--print` | Also prints to the console |
 | `--version` | Shows the Jctx version |
 | `--help` | Shows help |
@@ -150,6 +154,7 @@ Paste `context.txt` (or the contents of `context.md`) into any AI chat and ask y
 > *"Here's my Java/Kotlin project structure: [paste]. I want to refactor the messaging module to use WebSockets — where should I start?"*
 
 Works great with **Claude**, **ChatGPT**, **Gemini**, and any other AI that accepts long text input.
+Jctx automatically estimates the **Token Count** to help you determine which models will fit your context.
 
 ---
 
@@ -178,8 +183,9 @@ Works great with **Claude**, **ChatGPT**, **Gemini**, and any other AI that acce
 
 - [x] Kotlin support
 - [x] Markdown output mode (`context.md`)
-- [ ] Multi-language project estimations (mixed Java + Kotlin percentages)
-- [ ] Token count estimate alongside output
+- [x] Multi-language project estimations (mixed Java + Kotlin percentages)
+- [x] Token count estimate alongside output
+- [x] Clipboard support and Slim mode
 - [ ] Cross-platform packaging (Homebrew / pip)
 
 ---

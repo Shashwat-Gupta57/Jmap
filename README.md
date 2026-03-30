@@ -154,7 +154,30 @@ Paste `context.txt` (or the contents of `context.md`) into any AI chat and ask y
 > *"Here's my Java/Kotlin project structure: [paste]. I want to refactor the messaging module to use WebSockets — where should I start?"*
 
 Works great with **Claude**, **ChatGPT**, **Gemini**, and any other AI that accepts long text input.
-Jctx automatically estimates the **Token Count** to help you determine which models will fit your context.
+
+---
+
+## Output Metrics (Token Count & Language Percentages)
+
+After generating the file, Jctx displays an instant console summary that breaks down your project's total token count and provides a dynamic progress bar showing the exact split of **Java vs Kotlin** code. 
+
+```text
+================================================================
+ LANGUAGE PERCENTAGES
+================================================================
+  Java    :  68.2%  ██████████████████████████████████░░░░░░░░░░░░░░░░  (~23,400 tokens)
+  Kotlin  :  31.8%  ███████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  (~10,910 tokens)
+================================================================
+ TOKEN COUNT ESTIMATE (GPT-4 / Claude / Gemini)
+================================================================
+  1. File Tree      :        312 tokens
+  2. Build Files    :        145 tokens
+  3. Source Code    :     34,310 tokens
+----------------------------------------------------------------
+  Estimated Total   :     34,767 tokens
+================================================================
+```
+Use this to clearly determine if your project fits within your chosen AI's context window.
 
 ---
 

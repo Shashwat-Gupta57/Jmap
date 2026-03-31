@@ -15,6 +15,14 @@ FLAGS
   --version     Show version information and exit.
   --help  -h    Show this help page and exit.
 
+JCTXIGNORE
+  Place a .jctxignore file in the project root to exclude additional
+  directories or files from context extraction. Supports:
+    dirname/          Skip directories named 'dirname'
+    *.test.java       Skip files matching the glob pattern
+    **/test/**        Skip any directory named 'test'
+    # comment         Lines starting with # are ignored
+
 FLAGS CAN BE COMBINED
   --no-tree --print       Both at once, no problem.
   --md --print            Markdown report, also printed.
@@ -61,6 +69,7 @@ WHAT IS EXTRACTED PER CLASS
 import sys
 import os
 import re
+import fnmatch
 import platform
 import subprocess
 from datetime import datetime
@@ -165,6 +174,56 @@ KT_SKIP_WORDS = {
     'return', 'throw', 'break', 'continue', 'import', 'package',
     'is', 'as', 'in', 'null', 'true', 'false', 'this', 'super',
 }
+
+
+# ===================================================
+# .jctxignore SUPPORT
+# ===================================================
+
+EXTRA_SKIP_DIRS = set()
+EXTRA_SKIP_PATTERNS = []
+
+
+def parse_jctxignore(project_dir):
+    """
+    Load .jctxignore from the project root and populate
+    EXTRA_SKIP_DIRS and EXTRA_SKIP_PATTERNS.
+    """
+    global EXTRA_SKIP_DIRS, EXTRA_SKIP_PATTERNS
+    EXTRA_SKIP_DIRS = set()
+    EXTRA_SKIP_PATTERNS = []
+
+    ignore_path = os.path.join(project_dir, '.jctxignore')
+    if not os.path.isfile(ignore_path):
+        return
+
+    try:
+        with open(ignore_path, encoding='utf-8', errors='replace') as f:
+            for raw in f:
+                line = raw.strip()
+                if not line or line.startswith('#'):
+                    continue
+
+                # **/dirname/** -> directory pattern
+                if line.startswith('**/') and line.endswith('/**'):
+                    dir_name = line[3:-3]
+                    if dir_name:
+                        EXTRA_SKIP_DIRS.add(dir_name)
+                    continue
+
+                # dirname/ -> directory pattern
+                if line.endswith('/'):
+                    dir_name = line.rstrip('/')
+                    if '/' in dir_name:
+                        dir_name = dir_name.rsplit('/', 1)[-1]
+                    if dir_name:
+                        EXTRA_SKIP_DIRS.add(dir_name)
+                    continue
+
+                # File glob pattern (e.g. *.test.java)
+                EXTRA_SKIP_PATTERNS.append(line)
+    except Exception:
+        pass
 
 
 # ===================================================
@@ -337,12 +396,21 @@ def print_help():
 # ===================================================
 
 def should_skip_dir(name):
-    return name.startswith('.') or name.lower() in SKIP_DIRS
+    low = name.lower()
+    return (name.startswith('.')
+            or low in SKIP_DIRS
+            or name in EXTRA_SKIP_DIRS
+            or low in EXTRA_SKIP_DIRS)
 
 
 def should_skip_file(name):
     _, ext = os.path.splitext(name)
-    return ext.lower() in SKIP_EXTENSIONS or name in ('context.txt', 'context.md')
+    if ext.lower() in SKIP_EXTENSIONS or name in ('context.txt', 'context.md'):
+        return True
+    for pattern in EXTRA_SKIP_PATTERNS:
+        if fnmatch.fnmatch(name, pattern):
+            return True
+    return False
 
 
 def build_tree_lines(root_dir):
@@ -1047,7 +1115,7 @@ def collect_java_files(project_dir):
     for root, dirs, files in os.walk(project_dir):
         dirs[:] = sorted([d for d in dirs if not should_skip_dir(d)])
         for fname in sorted(files):
-            if fname.endswith('.java'):
+            if fname.endswith('.java') and not should_skip_file(fname):
                 result.append(os.path.join(root, fname))
     return result
 
@@ -1057,7 +1125,7 @@ def collect_kotlin_files(project_dir):
     for root, dirs, files in os.walk(project_dir):
         dirs[:] = sorted([d for d in dirs if not should_skip_dir(d)])
         for fname in sorted(files):
-            if fname.endswith('.kt'):
+            if fname.endswith('.kt') and not should_skip_file(fname):
                 result.append(os.path.join(root, fname))
     return result
 
@@ -1081,6 +1149,91 @@ def find_gradle_files(project_dir):
             if fname in gradle_names:
                 result.append(os.path.join(root, fname))
     return result
+
+
+# ===================================================
+# DEPENDENCY GRAPH
+# ===================================================
+
+IMPORT_RE = re.compile(r'^\s*import\s+(?:static\s+)?([\w.]+)\s*(?:as\s+\w+)?\s*;?\s*$')
+
+
+def build_dependency_graph(java_files, kotlin_files):
+    """
+    Build a dependency graph of project-internal class references.
+    Scans import statements and cross-references with known project classes.
+    Returns dict: { 'ClassName': sorted(['DepA', 'DepB', ...]) }
+    """
+    # Step 1: Collect all class names from parsed files
+    all_classes = set()
+    file_classes = {}  # filepath -> list of class names in that file
+
+    for fp in (java_files or []):
+        result = parse_java_file(fp)
+        names = [c['name'] for c in result.get('classes', [])]
+        file_classes[fp] = names
+        all_classes.update(names)
+
+    for fp in (kotlin_files or []):
+        result = parse_kotlin_file(fp)
+        names = [c['name'] for c in result.get('classes', [])
+                 if c['name'] != '(top-level)']
+        file_classes[fp] = names
+        all_classes.update(names)
+
+    if not all_classes:
+        return {}
+
+    # Step 2: For each file, scan import statements for project-internal refs
+    graph = {}
+
+    for fp in list(java_files or []) + list(kotlin_files or []):
+        classes_in_file = file_classes.get(fp, [])
+        if not classes_in_file:
+            continue
+
+        deps = set()
+        try:
+            with open(fp, encoding='utf-8', errors='replace') as f:
+                for line in f:
+                    m = IMPORT_RE.match(line)
+                    if m:
+                        parts = m.group(1).split('.')
+                        imported_name = parts[-1]
+                        if imported_name == '*':
+                            continue
+                        if imported_name in all_classes:
+                            deps.add(imported_name)
+        except Exception:
+            pass
+
+        for cls_name in classes_in_file:
+            existing = set(graph.get(cls_name, []))
+            existing.update(deps)
+            existing.discard(cls_name)  # remove self-references
+            graph[cls_name] = sorted(existing)
+
+    return graph
+
+
+def print_dependency_graph(graph):
+    """Print the project-internal dependency graph to the console."""
+    if not graph:
+        return
+
+    print()
+    print(DIVIDER)
+    print(' DEPENDENCY GRAPH (project-internal)')
+    print(DIVIDER)
+
+    for cls_name in sorted(graph.keys()):
+        deps = graph[cls_name]
+        if deps:
+            print(f'  {cls_name} \u2192 {", ".join(deps)}')
+        else:
+            print(f'  {cls_name} \u2192 (none)')
+
+    print(DIVIDER)
 
 
 # ===================================================
@@ -1505,6 +1658,10 @@ def main():
         print(f'[ERROR] Not a directory: {project}')
         sys.exit(1)
 
+    # ── Load .jctxignore ──────────────────────────────────────────
+    parse_jctxignore(project)
+    has_jctxignore = bool(EXTRA_SKIP_DIRS or EXTRA_SKIP_PATTERNS)
+
     show_tree    = '--no-tree'   not in flags
     do_print     = '--print'     in flags
     do_md        = '--md'        in flags
@@ -1534,6 +1691,8 @@ def main():
     print(f'  Slim mode  : {"yes (--slim)" if do_slim else "no"}')
     print(f'  Clipboard  : {"yes (--clipboard)" if do_clipboard else "no"}')
     print(f'  Console    : {"yes (--print)" if do_print else "no"}')
+    if has_jctxignore:
+        print(f'  .jctxignore: yes ({len(EXTRA_SKIP_DIRS)} dirs, {len(EXTRA_SKIP_PATTERNS)} patterns)')
     print(DIVIDER)
     print()
 
@@ -1587,6 +1746,10 @@ def main():
     kotlin_src_tokens = _count_source_tokens(kotlin_files) if kotlin_files else 0
 
     print_language_percentages(java_src_tokens, kotlin_src_tokens)
+
+    # ── Dependency graph (always, console only)  ─────────────────
+    dep_graph = build_dependency_graph(java_files, kotlin_files)
+    print_dependency_graph(dep_graph)
 
     # ── Token summary (always, console only)  ────────────────────
     total_tokens = estimate_tokens(report)
